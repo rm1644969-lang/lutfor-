@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>srBrowser • Firebase License & HWID Control Hub</title>
+  <!-- Google Fonts & Lucide Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <style>
+    :root {
+      --bg-dark: #070d18;
+      --bg-card: rgba(15, 23, 42, 0.75);
+      --bg-card-hover: rgba(30, 41, 59, 0.85);
+      --border-color: rgba(51, 65, 85, 0.6);
+      --border-glow: rgba(56, 189, 248, 0.35);
+      --primary: #0284c7;
+      --primary-hover: #0ea5e9;
+      --primary-glow: rgba(14, 165, 233, 0.25);
+      --accent: #38bdf8;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-yellow: #f59e0b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-main: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(2, 132, 199, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+        linear-gradient(180deg, #070d18 0%, #030712 100%);
+      color: var(--text-main);
+      font-family: var(--font-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0b1120; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+    /* Login Overlay */
+    #authOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 7, 18, 0.92);
+      backdrop-filter: blur(16px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .auth-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 40px rgba(14, 165, 233, 0.15);
+      border-radius: 20px;
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      position: relative;
+    }
+
+    .auth-card .logo-badge {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      box-shadow: 0 10px 25px rgba(2, 132, 199, 0.4);
+    }
+
+    .auth-card h2 {
+      font-size: 22px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    .auth-card p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .auth-card input {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(6, 12, 24, 0.85);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 16px;
+      font-family: var(--font-mono);
+      text-align: center;
+      letter-spacing: 2px;
+      margin-bottom: 18px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .auth-card input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    .btn-auth {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-auth:hover {
+      background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba(2, 132, 199, 0.4);
+    }
+
+    .auth-error {
+      color: var(--accent-red);
+      font-size: 12.5px;
+      margin-top: 12px;
+      font-weight: 600;
+      display: none;
+    }
+
+    /* Main Container */
+    .app-container {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+    }
+
+    /* Navbar */
+    .navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      backdrop-filter: blur(12px);
+      margin-bottom: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+    }
+
+    .brand-text h1 {
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-text span {
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .pill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--accent-green);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .pill-badge.status-warning {
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--accent-yellow);
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-secondary {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: #1e293b;
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 18px 20px;
+      backdrop-filter: blur(10px);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-glow);
+    }
+
+    .stat-card .stat-icon {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      color: rgba(148, 163, 184, 0.25);
+    }
+
+    .stat-card .stat-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .stat-card .stat-val {
+      font-size: 26px;
+      font-weight: 900;
+      font-family: var(--font-mono);
+      color: #fff;
+    }
+
+    /* Main Grid Layout */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 24px;
+      backdrop-filter: blur(12px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .card-title i {
+      color: var(--accent);
+    }
+
+    /* Form Inputs */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 7px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 11px 14px;
+      background: rgba(6, 12, 24, 0.85);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 13.5px;
+      font-family: inherit;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .form-control:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px var(--primary-glow);
+    }
+
+    select.form-control {
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-weight: 800;
+      font-size: 13.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.35);
+      transition: all 0.2s;
+      margin-top: 20px;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 25px rgba(2, 132, 199, 0.45);
+    }
+
+    /* Table Toolbar */
+    .table-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 9px 12px 9px 36px;
+      background: rgba(6, 12, 24, 0.85);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .search-box i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .filter-tabs {
+      display: flex;
+      background: rgba(6, 12, 24, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 3px;
+    }
+
+    .tab-btn {
+      padding: 6px 12px;
+      background: transparent;
+      border: none;
+      border-radius: 7px;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: #1e293b;
+      color: var(--accent);
+    }
+
+    /* Data Table */
+    .table-responsive {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 12.5px;
+    }
+
+    th {
+      background: #0f172a;
+      color: var(--text-muted);
+      font-weight: 800;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-color);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+      vertical-align: middle;
+    }
+
+    tr:hover td {
+      background: rgba(30, 41, 59, 0.4);
+    }
+
+    .key-badge {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    .hwid-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #cbd5e1;
+      background: #090e17;
+      padding: 3px 6px;
+      border-radius: 4px;
+      border: 1px solid #1e293b;
+    }
+
+    .hwid-unbound {
+      color: var(--accent-yellow);
+      background: rgba(245, 158, 11, 0.1);
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    .status-badge {
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .status-active {
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--accent-green);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-blocked {
+      background: rgba(239, 68, 68, 0.12);
+      color: var(--accent-red);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .status-expired {
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--accent-yellow);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-action-icon {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-action-icon:hover {
+      background: #1e293b;
+      color: #fff;
+      border-color: var(--border-color);
+    }
+
+    .btn-action-icon.danger:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--accent-red);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 28px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #0f172a;
+      border: 1px solid var(--accent);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      z-index: 100000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ADMIN PASSCODE GATE (PASS: 2026) -->
+  <div id="authOverlay">
+    <div class="auth-card">
+      <div class="logo-badge">
+        <i data-lucide="shield-check" style="width: 30px; height: 30px; color: #fff;"></i>
+      </div>
+      <h2>srBrowser Admin Gate</h2>
+      <p>Enter Master Password to access Firebase Control Hub</p>
+      
+      <form id="passForm" onsubmit="event.preventDefault(); verifyPass();">
+        <input type="password" id="adminPassInput" placeholder="••••" autofocus required autocomplete="off">
+        <button type="submit" class="btn-auth">
+          <span>Unlock Admin Panel</span>
+          <i data-lucide="arrow-right" style="width: 16px; height: 16px;"></i>
+        </button>
+        <div id="authErrorMsg" class="auth-error">❌ Incorrect Passcode! Try again.</div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN APP CONTAINER -->
+  <div class="app-container">
+    
+    <!-- Navbar -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="brand-icon">
+          <i data-lucide="cpu" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div class="brand-text">
+          <h1>srBrowser License Hub</h1>
+          <span>Firebase RTDB Gateway • HWID Protected</span>
+        </div>
+      </div>
+      
+      <div class="nav-actions">
+        <div id="rtdbStatusPill" class="pill-badge">
+          <span style="width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%;"></span>
+          <span>Connecting...</span>
+        </div>
+        <button class="btn-secondary" onclick="openRulesModal()">
+          <i data-lucide="help-circle" style="width: 14px; height: 14px;"></i>
+          <span>Firebase Rules Guide</span>
+        </button>
+        <button class="btn-secondary" onclick="lockAdmin()">
+          <i data-lucide="log-out" style="width: 14px; height: 14px;"></i>
+          <span>Lock</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Stats Bar -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <i data-lucide="key" class="stat-icon" style="width: 32px; height: 32px;"></i>
+        <div class="stat-label">TOTAL LICENSES</div>
+        <div class="stat-val" id="statTotal">0</div>
+      </div>
+      <div class="stat-card">
+        <i data-lucide="check-circle-2" class="stat-icon" style="width: 32px; height: 32px; color: var(--accent-green);"></i>
+        <div class="stat-label">ACTIVE / VALID</div>
+        <div class="stat-val" id="statActive" style="color: var(--accent-green);">0</div>
+      </div>
+      <div class="stat-card">
+        <i data-lucide="monitor" class="stat-icon" style="width: 32px; height: 32px; color: var(--accent);"></i>
+        <div class="stat-label">HWID BOUND DEVICES</div>
+        <div class="stat-val" id="statHwidBound" style="color: var(--accent);">0</div>
+      </div>
+      <div class="stat-card">
+        <i data-lucide="ban" class="stat-icon" style="width: 32px; height: 32px; color: var(--accent-red);"></i>
+        <div class="stat-label">BLOCKED / SUSPENDED</div>
+        <div class="stat-val" id="statBlocked" style="color: var(--accent-red);">0</div>
+      </div>
+    </div>
+
+    <!-- Main 2-Column Grid -->
+    <div class="grid-2">
+      
+      <!-- Column 1: Generate License -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <i data-lucide="plus-circle" style="width: 18px; height: 18px;"></i>
+            <span>Generate New License</span>
+          </div>
+        </div>
+
+        <form id="genForm" onsubmit="event.preventDefault(); handleGenerateKey();">
+          <div class="form-group">
+            <label>CUSTOMER / USER NAME</label>
+            <input type="text" id="custName" class="form-control" placeholder="e.g. Pro User 01" required>
+          </div>
+
+          <div class="form-group">
+            <label>PLAN / ACCESS DURATION</label>
+            <select id="planDuration" class="form-control" onchange="handlePlanChange()">
+              <option value="1">1 Day (Quick Trial)</option>
+              <option value="7">7 Days (1 Week Pro)</option>
+              <option value="15">15 Days (Bi-Weekly Pro)</option>
+              <option value="30" selected>30 Days (1 Month Pro)</option>
+              <option value="90">90 Days (3 Months Pro)</option>
+              <option value="180">180 Days (6 Months Pro)</option>
+              <option value="365">365 Days (1 Year Pro)</option>
+              <option value="99999">Lifetime VIP (Unlimited Access)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>DEVICE HWID LOCK (OPTIONAL)</label>
+            <input type="text" id="customHwid" class="form-control" placeholder="Leave blank to Auto-bind on user's first PC login" style="font-family: var(--font-mono); font-size: 12px;">
+            <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 4px;">
+              💡 If left empty, the license will automatically bind to the user's PC on their first login.
+            </span>
+          </div>
+
+          <div class="form-group">
+            <label>CUSTOM LICENSE KEY (OPTIONAL)</label>
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="customKeyInput" class="form-control" placeholder="Auto-generate" style="font-family: var(--font-mono); text-transform: uppercase;">
+              <button type="button" class="btn-secondary" onclick="generateRandomKeyStr()" title="Generate Random Key">
+                <i data-lucide="shuffle" style="width: 14px; height: 14px;"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary" id="btnSubmitGen">
+            <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i>
+            <span>Deploy License to Firebase</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Column 2: Licenses Table & Manager -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <i data-lucide="database" style="width: 18px; height: 18px;"></i>
+            <span>Active Licenses & Users</span>
+          </div>
+          <button class="btn-secondary" onclick="loadAllLicensesFromFirebase()">
+            <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <!-- Table Toolbar -->
+        <div class="table-toolbar">
+          <div class="search-box">
+            <i data-lucide="search" style="width: 14px; height: 14px;"></i>
+            <input type="text" id="searchInput" placeholder="Search by Key, Customer, or HWID..." oninput="filterLicensesTable()">
+          </div>
+
+          <div class="filter-tabs">
+            <button class="tab-btn active" onclick="setFilterTab('all', this)">All</button>
+            <button class="tab-btn" onclick="setFilterTab('active', this)">Active</button>
+            <button class="tab-btn" onclick="setFilterTab('unbound', this)">Unbound</button>
+            <button class="tab-btn" onclick="setFilterTab('blocked', this)">Blocked</button>
+            <button class="tab-btn" onclick="setFilterTab('expired', this)">Expired</button>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>License Key</th>
+                <th>Duration / Expiry</th>
+                <th>Bound HWID</th>
+                <th>Status</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="licensesTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                  ⏳ Loading licenses from Firebase...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GENERATED KEY POPUP MODAL -->
+  <div id="newKeyModal" class="modal-backdrop">
+    <div class="modal-content">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="width: 52px; height: 52px; background: rgba(16, 185, 129, 0.15); border: 1px solid var(--accent-green); border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; color: var(--accent-green); margin-bottom: 12px;">
+          <i data-lucide="check" style="width: 28px; height: 28px;"></i>
+        </div>
+        <h3 style="font-size: 18px; font-weight: 800; color: #fff;">License Key Generated!</h3>
+        <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 4px;">Share this key with your client to activate srBrowser.</p>
+      </div>
+
+      <div style="background: rgba(6, 12, 24, 0.85); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin-bottom: 20px; text-align: center;">
+        <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">LICENSE KEY</div>
+        <div id="modalKeyText" style="font-family: var(--font-mono); font-size: 18px; font-weight: 800; color: var(--accent); letter-spacing: 1px;">SRB-XXXX-XXXX-XXXX</div>
+      </div>
+
+      <div style="font-size: 12px; color: #cbd5e1; line-height: 1.6; margin-bottom: 20px; background: rgba(30, 41, 59, 0.5); padding: 12px; border-radius: 10px;">
+        <div>👤 <b>Customer:</b> <span id="modalCustText"></span></div>
+        <div>⏱️ <b>Plan:</b> <span id="modalPlanText"></span></div>
+        <div>💻 <b>HWID Lock:</b> <span id="modalHwidText"></span></div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-primary" style="margin-top: 0;" onclick="copyModalKey()">
+          <i data-lucide="copy" style="width: 15px; height: 15px;"></i>
+          <span>Copy License Key</span>
+        </button>
+        <button class="btn-secondary" style="padding: 0 16px;" onclick="closeModal('newKeyModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FIREBASE RULES GUIDE MODAL -->
+  <div id="rulesModal" class="modal-backdrop">
+    <div class="modal-content" style="max-width: 540px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <h3 style="font-size: 16px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="shield-alert" style="color: var(--accent-yellow); width: 20px; height: 20px;"></i>
+          <span>Firebase Realtime Database Rules</span>
+        </h3>
+        <button class="btn-action-icon" onclick="closeModal('rulesModal')"><i data-lucide="x" style="width: 16px; height: 16px;"></i></button>
+      </div>
+
+      <p style="font-size: 13px; color: #cbd5e1; line-height: 1.6; margin-bottom: 14px;">
+        If you see <b>Permission Denied (401)</b>, please update your Firebase Realtime Database Security Rules so your website and exe can read and write licenses:
+      </p>
+
+      <ol style="font-size: 12.5px; color: var(--text-muted); line-height: 1.8; margin-left: 20px; margin-bottom: 16px;">
+        <li>Go to <a href="https://console.firebase.google.com/project/gpt-sell/database" target="_blank" style="color: var(--accent); text-decoration: underline;">Firebase Console > Realtime Database</a>.</li>
+        <li>Click on the <b>Rules</b> tab.</li>
+        <li>Paste the rules below and click <b>Publish</b>:</li>
+      </ol>
+
+      <pre style="background: #060c18; border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; font-family: var(--font-mono); font-size: 12.5px; color: #38bdf8; overflow-x: auto; margin-bottom: 18px;">
+{
+  "rules": {
+    "licenses": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}</pre>
+
+      <button class="btn-primary" style="margin-top: 0;" onclick="closeModal('rulesModal')">Got it!</button>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="toast">
+    <i data-lucide="check-circle" style="color: var(--accent-green); width: 18px; height: 18px;"></i>
+    <span id="toastMsg">Action completed!</span>
+  </div>
+
+  <script>
+    // =========================================================================
+    // CONFIGURATION & CONSTANTS
+    // =========================================================================
+    const MASTER_PASS = "2026";
+    const FIREBASE_RTDB_URL = "https://gpt-sell-default-rtdb.firebaseio.com";
+    
+    let allLicenses = {};
+    let activeFilterTab = "all";
+
+    // =========================================================================
+    // ADMIN AUTH GATE
+    // =========================================================================
+    function checkAuthSession() {
+      if (sessionStorage.getItem("sr_admin_auth") === "true") {
+        document.getElementById("authOverlay").style.display = "none";
+        initDashboard();
+      } else {
+        document.getElementById("authOverlay").style.display = "flex";
+        setTimeout(() => document.getElementById("adminPassInput").focus(), 100);
+      }
+    }
+
+    function verifyPass() {
+      const input = document.getElementById("adminPassInput").value.trim();
+      const err = document.getElementById("authErrorMsg");
+      if (input === MASTER_PASS) {
+        sessionStorage.setItem("sr_admin_auth", "true");
+        document.getElementById("authOverlay").style.display = "none";
+        initDashboard();
+      } else {
+        err.style.display = "block";
+        document.getElementById("adminPassInput").value = "";
+        document.getElementById("adminPassInput").focus();
+      }
+    }
+
+    function lockAdmin() {
+      sessionStorage.removeItem("sr_admin_auth");
+      location.reload();
+    }
+
+    // =========================================================================
+    // FIREBASE REALTIME DATABASE API CALLS
+    // =========================================================================
+    async function loadAllLicensesFromFirebase() {
+      const pill = document.getElementById("rtdbStatusPill");
+      pill.className = "pill-badge";
+      pill.innerHTML = `<span style="width: 8px; height: 8px; background: var(--accent-yellow); border-radius: 50%;"></span><span>Syncing...</span>`;
+
+      try {
+        const resp = await fetch(`${FIREBASE_RTDB_URL}/licenses.json`);
+        if (!resp.ok) {
+          if (resp.status === 401 || resp.status === 403) {
+            pill.className = "pill-badge status-warning";
+            pill.innerHTML = `<span style="width: 8px; height: 8px; background: var(--accent-yellow); border-radius: 50%;"></span><span>Permission Denied (Set Rules)</span>`;
+            showToast("⚠️ Firebase Database Rules are locked. Click 'Firebase Rules Guide'!");
+            return;
+          }
+          throw new Error(`HTTP ${resp.status}`);
+        }
+
+        const data = await resp.json();
+        allLicenses = data || {};
+        
+        pill.className = "pill-badge";
+        pill.innerHTML = `<span style="width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%;"></span><span>Connected</span>`;
+        
+        renderStats();
+        renderLicensesTable();
+      } catch (err) {
+        pill.className = "pill-badge status-warning";
+        pill.innerHTML = `<span style="width: 8px; height: 8px; background: var(--accent-red); border-radius: 50%;"></span><span>Disconnected</span>`;
+        console.error("RTDB error:", err);
+      }
+    }
+
+    async function saveLicenseToFirebase(key, licenseData) {
+      const cleanKey = key.trim().toUpperCase();
+      const url = `${FIREBASE_RTDB_URL}/licenses/${encodeURIComponent(cleanKey)}.json`;
+      const resp = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(licenseData)
+      });
+      if (!resp.ok) {
+        throw new Error(`Failed to save (HTTP ${resp.status})`);
+      }
+      return await resp.json();
+    }
+
+    async function deleteLicenseFromFirebase(key) {
+      const cleanKey = key.trim().toUpperCase();
+      const url = `${FIREBASE_RTDB_URL}/licenses/${encodeURIComponent(cleanKey)}.json`;
+      const resp = await fetch(url, { method: "DELETE" });
+      if (!resp.ok) throw new Error("Delete failed");
+    }
+
+    async function patchLicenseField(key, patchObj) {
+      const cleanKey = key.trim().toUpperCase();
+      const url = `${FIREBASE_RTDB_URL}/licenses/${encodeURIComponent(cleanKey)}.json`;
+      const resp = await fetch(url, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patchObj)
+      });
+      if (!resp.ok) throw new Error("Update failed");
+    }
+
+    // =========================================================================
+    // LICENSE GENERATION LOGIC
+    // =========================================================================
+    function generateRandomKeyStr() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let p1 = "", p2 = "", p3 = "";
+      for (let i = 0; i < 4; i++) p1 += chars.charAt(Math.floor(Math.random() * chars.length));
+      for (let i = 0; i < 4; i++) p2 += chars.charAt(Math.floor(Math.random() * chars.length));
+      for (let i = 0; i < 4; i++) p3 += chars.charAt(Math.floor(Math.random() * chars.length));
+      const key = `SRB-${p1}-${p2}-${p3}`;
+      document.getElementById("customKeyInput").value = key;
+      return key;
+    }
+
+    async function handleGenerateKey() {
+      const custName = document.getElementById("custName").value.trim();
+      const durationDays = parseInt(document.getElementById("planDuration").value, 10);
+      const customHwid = document.getElementById("customHwid").value.trim().toUpperCase();
+      let key = document.getElementById("customKeyInput").value.trim().toUpperCase();
+
+      if (!key) {
+        key = generateRandomKeyStr();
+      }
+
+      const now = new Date();
+      const isLifetime = (durationDays >= 99999);
+      
+      let expDate = new Date();
+      if (isLifetime) {
+        expDate.setFullYear(2099, 11, 31);
+      } else {
+        expDate.setDate(now.getDate() + durationDays);
+      }
+
+      const formatDate = (d) => {
+        return d.toISOString().replace('T', ' ').substring(0, 19);
+      };
+
+      const planNameMap = {
+        1: "1 Day Trial",
+        7: "7 Days Pro",
+        15: "15 Days Pro",
+        30: "30 Days Pro (1 Month)",
+        90: "90 Days Pro (3 Months)",
+        180: "180 Days Pro (6 Months)",
+        365: "365 Days Pro (1 Year)",
+        99999: "Lifetime VIP"
+      };
+
+      const licenseObj = {
+        key: key,
+        customer: custName || "VIP User",
+        plan_name: planNameMap[durationDays] || `${durationDays} Days Pro`,
+        duration_days: durationDays,
+        is_lifetime: isLifetime,
+        created_at: formatDate(now),
+        created_at_ts: now.getTime(),
+        expires_at: formatDate(expDate),
+        expires_at_ts: expDate.getTime(),
+        hwid: customHwid || "UNBOUND",
+        status: "active",
+        activated_at: customHwid ? formatDate(now) : null,
+        notes: "Generated via Web Control Hub"
+      };
+
+      const btn = document.getElementById("btnSubmitGen");
+      btn.disabled = true;
+      btn.innerHTML = `<span>Saving to Firebase...</span>`;
+
+      try {
+        await saveLicenseToFirebase(key, licenseObj);
+        allLicenses[key] = licenseObj;
+        
+        // Show Success Modal
+        document.getElementById("modalKeyText").innerText = key;
+        document.getElementById("modalCustText").innerText = custName;
+        document.getElementById("modalPlanText").innerText = licenseObj.plan_name;
+        document.getElementById("modalHwidText").innerText = customHwid ? customHwid : "⏳ Auto-bind on user's first login";
+        openModal("newKeyModal");
+
+        // Reset form
+        document.getElementById("custName").value = "";
+        document.getElementById("customHwid").value = "";
+        document.getElementById("customKeyInput").value = "";
+        
+        renderStats();
+        renderLicensesTable();
+        showToast(`🎉 License ${key} deployed successfully!`);
+      } catch (err) {
+        alert("Failed to save license to Firebase!\nPlease ensure Firebase Realtime Database rules allow write access.\nError: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="sparkles" style="width: 16px; height: 16px;"></i><span>Deploy License to Firebase</span>`;
+        lucide.createIcons();
+      }
+    }
+
+    // =========================================================================
+    // ACTIONS ON LICENSES (BLOCK, UNBLOCK, RESET HWID, DELETE)
+    // =========================================================================
+    async function toggleBlockLicense(key) {
+      const item = allLicenses[key];
+      if (!item) return;
+      const newStatus = (item.status === "blocked") ? "active" : "blocked";
+      try {
+        await patchLicenseField(key, { status: newStatus });
+        item.status = newStatus;
+        renderStats();
+        renderLicensesTable();
+        showToast(newStatus === "blocked" ? `🚫 License ${key} Blocked!` : `✅ License ${key} Activated!`);
+      } catch (err) {
+        alert("Action failed: " + err.message);
+      }
+    }
+
+    async function resetLicenseHwid(key) {
+      if (!confirm(`Reset HWID for key ${key}?\nThis will allow the client to bind this license to a new computer.`)) {
+        return;
+      }
+      try {
+        await patchLicenseField(key, { hwid: "UNBOUND", activated_at: null });
+        allLicenses[key].hwid = "UNBOUND";
+        allLicenses[key].activated_at = null;
+        renderStats();
+        renderLicensesTable();
+        showToast(`🔄 HWID unlinked for ${key}! Ready for new PC.`);
+      } catch (err) {
+        alert("Failed to reset HWID: " + err.message);
+      }
+    }
+
+    async function extendLicense(key, daysToAdd) {
+      const item = allLicenses[key];
+      if (!item) return;
+      
+      let expTs = item.expires_at_ts || Date.now();
+      if (expTs < Date.now()) expTs = Date.now();
+      const newTs = expTs + (daysToAdd * 86400000);
+      const newDateStr = new Date(newTs).toISOString().replace('T', ' ').substring(0, 19);
+
+      try {
+        await patchLicenseField(key, {
+          expires_at_ts: newTs,
+          expires_at: newDateStr,
+          status: "active"
+        });
+        item.expires_at_ts = newTs;
+        item.expires_at = newDateStr;
+        item.status = "active";
+        renderStats();
+        renderLicensesTable();
+        showToast(`➕ Added ${daysToAdd} Days to ${key}!`);
+      } catch (err) {
+        alert("Failed to extend: " + err.message);
+      }
+    }
+
+    async function removeLicense(key) {
+      if (!confirm(`Are you sure you want to permanently delete license ${key}?`)) {
+        return;
+      }
+      try {
+        await deleteLicenseFromFirebase(key);
+        delete allLicenses[key];
+        renderStats();
+        renderLicensesTable();
+        showToast(`🗑️ License ${key} deleted.`);
+      } catch (err) {
+        alert("Delete failed: " + err.message);
+      }
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(`📋 Copied: ${text}`);
+      }).catch(() => {
+        prompt("Copy Key:", text);
+      });
+    }
+
+    function copyModalKey() {
+      const key = document.getElementById("modalKeyText").innerText;
+      copyToClipboard(key);
+    }
+
+    // =========================================================================
+    // RENDERING & UI UPDATES
+    // =========================================================================
+    function renderStats() {
+      const keys = Object.keys(allLicenses);
+      const total = keys.length;
+      const now = Date.now();
+
+      let active = 0;
+      let bound = 0;
+      let blocked = 0;
+
+      keys.forEach(k => {
+        const it = allLicenses[k];
+        const isExp = !it.is_lifetime && it.expires_at_ts && it.expires_at_ts < now;
+        if (it.status === "blocked") {
+          blocked++;
+        } else if (!isExp) {
+          active++;
+        }
+        if (it.hwid && it.hwid !== "UNBOUND") {
+          bound++;
+        }
+      });
+
+      document.getElementById("statTotal").innerText = total;
+      document.getElementById("statActive").innerText = active;
+      document.getElementById("statHwidBound").innerText = bound;
+      document.getElementById("statBlocked").innerText = blocked;
+    }
+
+    function renderLicensesTable() {
+      const tbody = document.getElementById("licensesTableBody");
+      const search = document.getElementById("searchInput").value.trim().toLowerCase();
+      const keys = Object.keys(allLicenses);
+      const now = Date.now();
+
+      let filteredKeys = keys.filter(k => {
+        const it = allLicenses[k];
+        const cust = (it.customer || "").toLowerCase();
+        const hwid = (it.hwid || "").toLowerCase();
+        const keyLower = k.toLowerCase();
+
+        const matchSearch = keyLower.includes(search) || cust.includes(search) || hwid.includes(search);
+        if (!matchSearch) return false;
+
+        const isExp = !it.is_lifetime && it.expires_at_ts && it.expires_at_ts < now;
+        const isBlocked = (it.status === "blocked");
+        const isUnbound = (!it.hwid || it.hwid === "UNBOUND");
+
+        if (activeFilterTab === "active") return !isBlocked && !isExp;
+        if (activeFilterTab === "unbound") return isUnbound && !isBlocked;
+        if (activeFilterTab === "blocked") return isBlocked;
+        if (activeFilterTab === "expired") return isExp;
+        return true;
+      });
+
+      // Sort newest first
+      filteredKeys.sort((a, b) => (allLicenses[b].created_at_ts || 0) - (allLicenses[a].created_at_ts || 0));
+
+      if (filteredKeys.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">No licenses found matching criteria.</td></tr>`;
+        return;
+      }
+
+      let html = "";
+      filteredKeys.forEach((k, idx) => {
+        const it = allLicenses[k];
+        const isExp = !it.is_lifetime && it.expires_at_ts && it.expires_at_ts < now;
+        const isBlocked = (it.status === "blocked");
+        const isUnbound = (!it.hwid || it.hwid === "UNBOUND");
+
+        let statusBadge = "";
+        if (isBlocked) {
+          statusBadge = `<span class="status-badge status-blocked"><i data-lucide="ban" style="width: 12px; height: 12px;"></i> Blocked</span>`;
+        } else if (isExp) {
+          statusBadge = `<span class="status-badge status-expired"><i data-lucide="clock" style="width: 12px; height: 12px;"></i> Expired</span>`;
+        } else {
+          statusBadge = `<span class="status-badge status-active"><i data-lucide="check" style="width: 12px; height: 12px;"></i> Active</span>`;
+        }
+
+        let hwidBadge = "";
+        if (isUnbound) {
+          hwidBadge = `<span class="hwid-badge hwid-unbound">⏳ Unbound (Waiting 1st PC)</span>`;
+        } else {
+          hwidBadge = `<span class="hwid-badge" title="Click to copy" onclick="copyToClipboard('${it.hwid}')" style="cursor: pointer;">💻 ${it.hwid}</span>`;
+        }
+
+        let expiryDesc = "";
+        if (it.is_lifetime) {
+          expiryDesc = `<span style="color: var(--accent); font-weight: 800;">Lifetime VIP</span>`;
+        } else if (isExp) {
+          expiryDesc = `<span style="color: var(--accent-red); font-weight: 700;">Expired (${it.expires_at?.split(' ')[0]})</span>`;
+        } else {
+          const daysLeft = Math.ceil((it.expires_at_ts - now) / 86400000);
+          expiryDesc = `<div>${it.expires_at?.split(' ')[0]}</div><span style="font-size: 11px; color: var(--accent-green); font-weight: 700;">${daysLeft} Days left</span>`;
+        }
+
+        html += `
+          <tr>
+            <td>
+              <div style="font-weight: 700; color: #fff;">${it.customer || 'VIP Customer'}</div>
+              <span style="font-size: 11px; color: var(--text-muted);">${it.created_at?.split(' ')[0] || ''}</span>
+            </td>
+            <td>
+              <span class="key-badge" onclick="copyToClipboard('${k}')" style="cursor: pointer;" title="Click to copy">
+                <span>${k}</span>
+                <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
+              </span>
+            </td>
+            <td>
+              <div style="font-size: 12px; font-weight: 600;">${it.plan_name || 'VIP Pro'}</div>
+              ${expiryDesc}
+            </td>
+            <td>${hwidBadge}</td>
+            <td>${statusBadge}</td>
+            <td style="text-align: right; white-space: nowrap;">
+              <button class="btn-action-icon" onclick="copyToClipboard('${k}')" title="Copy Key">
+                <i data-lucide="copy" style="width: 14px; height: 14px;"></i>
+              </button>
+              <button class="btn-action-icon" onclick="resetLicenseHwid('${k}')" title="Reset HWID">
+                <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+              </button>
+              <button class="btn-action-icon" onclick="extendLicense('${k}', 30)" title="Add 30 Days">
+                <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+              </button>
+              <button class="btn-action-icon" onclick="toggleBlockLicense('${k}')" title="${isBlocked ? 'Unblock' : 'Block'}">
+                <i data-lucide="${isBlocked ? 'unlock' : 'lock'}" style="width: 14px; height: 14px; color: ${isBlocked ? 'var(--accent-green)' : 'var(--accent-yellow)'};"></i>
+              </button>
+              <button class="btn-action-icon danger" onclick="removeLicense('${k}')" title="Delete">
+                <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+      lucide.createIcons();
+    }
+
+    function setFilterTab(tab, btn) {
+      activeFilterTab = tab;
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderLicensesTable();
+    }
+
+    function filterLicensesTable() {
+      renderLicensesTable();
+    }
+
+    function openModal(id) {
+      document.getElementById(id).style.display = "flex";
+      lucide.createIcons();
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = "none";
+    }
+
+    function openRulesModal() {
+      openModal("rulesModal");
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      document.getElementById("toastMsg").innerText = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 3200);
+    }
+
+    function handlePlanChange() {
+      // Auto-update helper if needed
+    }
+
+    function initDashboard() {
+      lucide.createIcons();
+      generateRandomKeyStr();
+      loadAllLicensesFromFirebase();
+      // Auto poll every 15s
+      setInterval(loadAllLicensesFromFirebase, 15000);
+    }
+
+    // Initialize
+    window.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+      checkAuthSession();
+    });
+  </script>
+</body>
+</html>
+
